@@ -1,0 +1,179 @@
+#!/bin/bash
+
+# ---------------------------------------------------------------------
+# Make the   students-01   students-02  ...  students
+#   files containing student usernames, from the course roster
+#   (CSV) files which must have been previously downloaded.
+#
+# The user of this script must:
+#   -- BEFORE running this script:
+#         Download course roster (CSV) files.
+#   -- AFTER  running this script:
+#         Add usernames as desired to the other username files:
+#              instructors  assistants  others  temp
+#
+# Author:  David Mutchler.
+# ---------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# Get the values of the variables:
+#      course             e.g.  csse120
+#      term               e.g.  202030
+#      data_folder        e.g.    DATA/DATA-csse120-202030
+#      data_subfolders    e.g.  ( DATA   DATA-csse120-202030 )
+#      repos_folder       e.g.    REPOS/REPOS-csse120-202030
+#      repos_subfolders   e.g.  ( REPOS   REPOS-csse120-202030 )
+#
+# from the relevant files.
+# ----------------------------------------------------------------------
+
+if [ ! "${SET_CONSTANTS_HAS_RUN}" == "1" ]; then
+   source SET_CONSTANTS
+fi
+
+# ---------------------------------------------------------------------
+# Confirm that the DATA folder exists.  Exit with a warning if not.
+# ---------------------------------------------------------------------
+
+if [ ! -d "${data_folder}" ]; then
+    echo ""
+    echo "ERROR: The course and term are:"
+    echo "   Course: ${course}"
+    echo "   Term:   ${term}"
+    echo "but there is no corresponding  DATA  subfolder"
+    echo "   Subfolder: ${data_folder}"
+    echo "Figure out what is wrong and re-run this script."
+    echo "Nothing done."
+    echo ""
+    exit 1
+fi
+
+cd ${data_folder}
+
+# ---------------------------------------------------------------------
+# Confirm that there is at least one course roster (CSV) file.
+#   Exit with a warning if not.
+# ---------------------------------------------------------------------
+
+course_rosters=( $(/bin/ls | grep "\.csv$") )
+
+if [ ${#course_rosters[@]} == 0 ]; then
+    echo ""
+    echo "ERROR: There are no course rosters (i.e., CSV files) in"
+    echo "   ${data_folder}"
+    echo "This script extracts usernames from such course rosters."
+    echo "So if you are running this script, presumably there"
+    echo "should be at least one such course roster."
+    echo "Figure out what is wrong and re-run (or skip) this script."
+    echo "Nothing done."
+    echo ""
+    exit 1
+fi
+
+# ---------------------------------------------------------------------
+# For each course roster, make a corresponding   students-XX
+# file with the usernames extracted from that course roster.
+#   But do not overwrite an existing, non-empty file;
+#   instead, show the result of a DIFF of the existing file
+#   with the extracted usernames.
+# ---------------------------------------------------------------------
+
+for roster in ${course_rosters[@]}; do
+    section=$(echo $roster | sed 's/.*-//')
+    section=${section:0:2}
+
+    students_file=students-${section}
+
+    echo ""
+    echo "Extracting usernames:"
+    echo "   from course roster: ${roster}"
+    echo "   into students file: ${students_file}"
+
+    temp_file=temp-NOGOOD-THROW-THIS-AWAY-${roster}
+    /bin/rm -f ${temp_file}
+
+    # Extract the usernames into the temporary file:
+    cat ${roster} | sed '1,4d' | sed 's/^"//' | sed 's/".*$//' > ${temp_file}
+
+    # Careful! Do not overwrite an existing, non-empty students file!
+
+    if [ ! -s students-${section} ]; then
+
+        # The students file is new (or empty).
+        # Put the extracted usernames into it.
+
+        /bin/mv ${temp_file} ${students_file}
+        number_of_students="`cat ${students_file} | wc -l`"
+        echo "   OK! New file ${students_file} was created."
+        echo "   It now contains ${number_of_students} usernames."
+
+    elif [ "$( diff -q  ${students_file} ${temp_file} )" == "" ]; then
+        
+        # The students file exists but it has the same usernames
+        # as those extracted from the course roster.
+        # No action needed.
+
+        number_of_students="`cat ${students_file} | wc -l`"
+        echo "   OK! The students file already exists but it has"
+        echo "   the same usernames as those extracted from the course roster."
+        echo "   It still has ${number_of_students} usernames."
+
+    else
+        echo ""
+        echo "   WARNING: the students file exists and is non-empty."
+        echo "   I will NOT overwrite that file.  Here is a DIFF of"
+        echo "   the existing file with the usernames in the course roster."
+
+        diff ${students_file} ${temp_file}
+        echo ""
+        echo "   If you want to overwrite ${students_file}"
+        echo "   with the usernames extracted from the course roster,"
+        echo "   remove ${students_file} and then re-run this script."
+    fi
+
+    /bin/rm -f ${temp_file}
+done
+
+
+# ---------------------------------------------------------------------
+# If there is not already a non-empty   students   file,
+# make it, filling it with the concatenation of the students-XX files.
+# ---------------------------------------------------------------------
+
+echo ""
+if [ ! -s students ]; then
+    cat students-* > students
+    number_of_students="`cat students | wc -l`"
+    echo "I have created a   students   file that contains"
+    echo "   the usernames in the combined students-XX files."
+    echo "   It now contains ${number_of_students} usernames."
+else
+    number_of_students="`cat students | wc -l`"
+
+    echo "There is an existing, non-empty   students"
+    echo "   file that contains ${number_of_students} usernames."
+    echo "   I will NOT overwrite it. If you want it to"
+    echo "   incorporate changes that this script made,"
+    echo "   delete the existing   students   file"
+    echo "   and re-run this script."
+fi
+
+echo ""
+echo "*** REMINDER: ***"
+echo "Edit the files:"
+echo ""
+ls | grep -v '\.csv$'
+echo ""
+echo "as desired.  Add more files as desired."
+echo ""
+echo "For all subsequent scripts, you will specify"
+echo "which of those username files you wish to use."
+echo ""
+
+# ---------------------------------------------------------------------
+# Undo the CD done previously in this script.
+# ---------------------------------------------------------------------
+
+for folder in ${data_subfolders[@]}; do
+    cd ..
+done

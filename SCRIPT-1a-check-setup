@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# This script is intended to be "sourced" by other scripts
+#   (although it can be run stand-alone).
+#
+# This script:
+#   Checks that the one-time "setup"
+#   for this term and course has been completed successfully.
+#
+# It relies upon the data in:
+#   SET_CONSTANTS
+#
+# which in turn relies upon the data in:
+#   SET_TERM_AND_COURSE
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# Get the values of the variables:
+#      course             e.g.  csse120
+#      term               e.g.  202030
+#      data_folder        e.g.    DATA/DATA-csse120-202030
+#      data_subfolders    e.g.  ( DATA   DATA-csse120-202030 )
+#      repos_folder       e.g.    REPOS/REPOS-csse120-202030
+#      repos_subfolders   e.g.  ( REPOS   REPOS-csse120-202030 )
+#      repo_prefix        e.g.  csse120-202030-
+#      gitter_ssh         e.g.
+#          mutchler@gitter.csse.rose-hulman.edu
+#      gitter_repos_folder  e.g.  /srv/repos
+#
+# from the relevant files.
+# ----------------------------------------------------------------------
+
+if [ "${SET_CONSTANTS_HAS_RUN}" != "1" ]; then
+   source SET_CONSTANTS
+fi
+
+# ---------------------------------------------------------------------
+# Confirm that the REPOS subfolder exists.  Exit with a warning if not.
+# ---------------------------------------------------------------------
+
+if [ ! -d "${repos_folder}" ]; then
+    echo ""
+    echo "ERROR: The course and term are:"
+    echo "   Course: ${course}"
+    echo "   Term:   ${term}"
+    echo "but there is no corresponding  REPOS  subfolder"
+    echo "   Subfolder: ${repos_folder}"
+    echo "Figure out what is wrong and re-run this script."
+    echo "Nothing done."
+    echo ""
+    exit 1
+fi
+
+# ---------------------------------------------------------------------
+# Confirm that the DATA subfolder exists.  Exit with a warning if not.
+# ---------------------------------------------------------------------
+
+if [ ! -d "${data_folder}" ]; then
+    echo ""
+    echo "ERROR: The course and term are:"
+    echo "   Course: ${course}"
+    echo "   Term:   ${term}"
+    echo "but there is no corresponding  DATA  subfolder"
+    echo "   Subfolder: ${data_folder}"
+    echo "Figure out what is wrong and re-run this script."
+    echo "Nothing done."
+    echo ""
+    exit 1
+fi
+
+CHECK_SETUP_HAS_RUN=1  # For use in scripts "sourcing" this script.

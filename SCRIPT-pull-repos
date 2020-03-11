@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# For each repository specified by the   usernames_files(s)   below,
+#   do a   git pull
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# Set the file(s) of usernames to use.  These must be existing files
+#   in the existing  DATA/DATA-XXX-XXX  folder for your term and course.
+# ----------------------------------------------------------------------
+
+#  username_files=(temp)  # For doing a "test run" or just some students
+username_files=(students instructors assistants others)
+
+source SCRIPT-1f-pull-repos

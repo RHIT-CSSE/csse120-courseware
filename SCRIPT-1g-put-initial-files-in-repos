@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# This script is intended to be "sourced" by other scripts.
+#
+#   The script doing the "source" must have set the variable:
+#     username_files
+#   to an array of files from which to obtain usernames
+#
+# This script:
+#   Adds these files to each of the repositories:
+#       LICENSE   README.md  .gitignore
+#   It obtains those files  from the DATA subfolder, where they are named:
+#       DEFAULT-LICENSE   DEFAULT-README.md  DEFAULT-GITIGNORE
+#   It then does Add, Commit, and Push on the copied files.
+#
+# IMPORTANT: If you re-run this script:
+#   -- The copied files OVERWRITE the result from the previous run.
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+if [ "${username_files}" == "" ]; then
+    echo ""
+    echo "The script that SOURCED this script"
+    echo "failed to set the array variable"
+    echo "  username_files"
+    echo "to a non-empty value."
+    echo "EXITING NOW, NOTHING DONE."
+    echo ""
+    exit 1
+fi
+
+# ----------------------------------------------------------------------
+# Pull (or clone) the repositories.
+#   At the same time, get the values of the variables:
+#      repo_prefix        e.g.  csse120-202030-
+#      data_folder        e.g.    DATA/DATA-csse120-202030
+#      repos_folder       e.g.    REPOS/REPOS-csse120-202030
+#      repos_subfolders   e.g.  ( REPOS   REPOS-csse120-202030 )
+#
+# from the relevant files.
+# ----------------------------------------------------------------------
+
+
+if [ "${PULL_REPOS_HAS_RUN}" != "1" ]; then
+    source SCRIPT-1f-pull-repos
+fi
+
+# ----------------------------------------------------------------------
+# For each repo corresponding to a username in the usernames
+#   for this run, copy the LICENSE, README and GITIGNORE files
+#   into that repo.  Then add, commit and push the changes.
+# ----------------------------------------------------------------------
+
+echo ""
+echo "Copying LICENSE, README.md and .gitignore into the repos."
+
+for username in ${usernames[@]}; do
+    repo_name="${repo_prefix}${username}"
+
+    cp ${data_folder}/DEFAULT-LICENSE   ${repos_folder}/${repo_name}/LICENSE
+    cp ${data_folder}/DEFAULT-README.md ${repos_folder}/${repo_name}/README.md
+    cp ${data_folder}/DEFAULT-GITIGNORE ${repos_folder}/${repo_name}/.gitignore
+done
+
+# ----------------------------------------------------------------------
+# Add, commit and push the changes.
+# ----------------------------------------------------------------------
+
+cd "${repos_folder}"
+
+for username in ${usernames[@]}; do
+    repo_name="${repo_prefix}${username}"
+
+    cd ${repo_name}
+    git add LICENSE README.md .gitignore
+    git commit . -m "initialize repo with gitignore et al"
+    git push
+    cd ..
+done
+
+# ---------------------------------------------------------------------
+# Undo the CD done previously in this script.
+# ---------------------------------------------------------------------
+
+for folder in ${repos_subfolders[@]}; do
+    cd ..
+done

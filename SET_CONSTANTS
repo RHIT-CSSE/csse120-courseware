@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# This script is intended to be "sourced" by other scripts.
+#
+# This script:
+#
+#   Sets the variables:
+#      data_folder        e.g.    DATA/DATA-csse120-202030
+#      data_subfolders    e.g.  ( DATA   DATA-csse120-202030 )
+#      repos_folder       e.g.    REPOS/REPOS-csse120-202030
+#      repos_subfolders   e.g.  ( REPOS   REPOS-csse120-202030 )
+#      username_data_files   e.g.
+#            (students-01 students instructors assistants others temp)
+#
+#   to be used by the scripts for repository management.
+#
+#   Also gets (and stores) the variables set in SET_TERM_AND_COURSE:
+#      term                    e.g. 202030
+#      course                  e.g. csse120
+#      my_username_on_gitter   e.g. mutchler
+#      gitter_repos_folder     /srv/repos
+#      gitter_ssh              e.g. mutchler@gitter.csse.rose-hulman.edu
+#      repo_prefix             e.g. csse120-202030-
+#
+#   *** You can change the variables herein as desired,
+#   *** but there is probably NO NEED for you to do so.
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+source SET_TERM_AND_COURSE 
+
+data_top_folder=DATA
+data_subfolder=DATA-${course}-${term}
+data_folder="${data_top_folder}/${data_subfolder}"
+
+repos_top_folder=REPOS
+repos_subfolder=REPOS-${course}-${term}
+repos_folder="${repos_top_folder}/${repos_subfolder}"
+
+data_subfolders=( $(echo ${data_folder} | tr '/' ' ') )
+repos_subfolders=( $(echo ${repos_folder} | tr '/' ' ') )
+
+# Default files for usernames for repositories:
+username_data_files=( students-01 \
+                      students \
+                      instructors \
+                      assistants \
+                      others \
+                      temp )
+
+# For use in scripts "sourcing" this script:
+SET_CONSTANTS_HAS_RUN=1

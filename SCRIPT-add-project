@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# For each repository specified by the   usernames_files(s)   below,
+#   copy a project (folder) from the master repo for the course
+#   into the individual repository.  Then Add, Commit and Push.
+#
+# In its CURRENT form, this script does NOT allow overwriting
+#   the folder with new contents.  Any existing folder is SKIPPED.
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# Set the folder (project) to populate to each individual repository.
+# FIXME: The master_folder should really be set in a different file.
+# ----------------------------------------------------------------------
+
+folder_to_populate=WarmUpAndStretching
+master_folder="/Users/davidmutchler/230/EclipseProjects"
+
+# ----------------------------------------------------------------------
+# Set the file(s) of usernames to use.  These must be existing files
+#   in the existing  DATA/DATA-XXX-XXX  folder for your term and course.
+# ----------------------------------------------------------------------
+
+#  username_files=(temp)  # For doing a "test run" or just some of the students
+username_files=(students instructors assistants others)
+
+# ----------------------------------------------------------------------
+# Do a PULL or CLONE.
+#   As you do so, get the values of the variables:
+#      usernames          e.g. (mutchler alangavr)
+#      repo_prefix        e.g.  csse120-202030-
+#      repos_folder       e.g.    REPOS/REPOS-csse120-202030
+#      repos_subfolders   e.g.  ( REPOS   REPOS-csse120-202030 )
+#
+# from the relevant files.
+# ----------------------------------------------------------------------
+
+if [ ! "${PULL_REPOS_HAS_RUN}" == "1" ]; then
+    source SCRIPT-1f-pull-repos
+fi
+
+# ---------------------------------------------------------------------------------
+# Update the master copy (from which the team repos are populated).
+# ---------------------------------------------------------------------------------
+
+# FIXME: The following is specific to the  *** SVN *** repo for 230.
+svn update ${master_folder}
+
+master_folder_to_copy="${master_folder}/${folder_to_populate}"
+
+if [ ! -d ${master_folder_to_copy} ]; then
+    echo ""
+    echo "ERROR: The master folder to copy:"
+    echo "    ${master_folder_to_copy}"
+    echo "does not exist. Nothing done."
+    echo "Fix and re-run this script."
+    echo ""
+    exit 1
+fi
+
+# ----------------------------------------------------------------------
+# For each repo corresponding to a username in the usernames for this
+#   run, copy the master copy of the folder to populate into the
+#   individual repository and git ADD it.
+#
+#   First check that the folder to be created in the individual
+#   repository does not already exist (and WARN if it does so).
+# ----------------------------------------------------------------------
+
+cd ${repos_folder}
+
+echo ""
+echo "COPYING the master folder"
+echo "    ${master_folder_to_copy}"
+echo "to the repository for:"
+
+for username in ${usernames[@]}; do
+
+    repo_folder="${repo_prefix}${username}"
+
+    if [ -d "${repo_folder}/${folder_to_populate}" ]
+    then
+        echo "!!! SKIPPING ${username} because they already have the project!"
+    else
+        echo "    ${username}"
+        /bin/cp -r "${master_folder_to_copy}" "${repo_folder}"
+        cd ${repo_folder}
+        git add ${folder_to_populate}
+        cd ..
+    fi
+done
+
+# ----------------------------------------------------------------------
+# For each repo corresponding to a username in the usernames for this
+#   run, git PULL, COMMIT and PUSH the newly added folder.
+# ----------------------------------------------------------------------
+echo ""
+echo "COMMITTING and PUSHING the newly populated folder:"
+echo "    ${folder_to_populate}"
+echo "to the repository for:"
+
+for username in ${usernames[@]}; do
+    repo_folder="${repo_prefix}${username}"
+
+    echo "    ${username}"
+    cd ${repo_folder}
+    git pull
+    git commit -m "Initial version from instructor"
+    git push
+    cd ..
+done
+
+# ---------------------------------------------------------------------
+# Undo the CD done previously in this script.
+# ---------------------------------------------------------------------
+
+for folder in ${repos_subfolders[@]}; do
+    cd ..
+done

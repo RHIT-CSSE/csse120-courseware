@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# For each username specified by the   usernames_files(s)   below,
+#   make a repository for them,
+#   put initial files in it,
+#   and give access rights to the usual suspects.
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# Set the file(s) of usernames to use.  These must be existing files
+#   in the existing  DATA/DATA-XXX-XXX  folder for your term and course.
+# ----------------------------------------------------------------------
+
+#  username_files=(temp)  # For doing a "test run" or adding a student
+username_files=(instructors assistants others students)
+
+# ----------------------------------------------------------------------
+# Run the sub-scripts that do all the work.
+#   If any fail, they exit this script when they fail.
+# ----------------------------------------------------------------------
+
+source SCRIPT-1a-check-setup
+source SCRIPT-1b-get-usernames
+# source SCRIPT-1c-make-new-repos
+source SCRIPT-1d-check-repos-made
+# source SCRIPT-1e-give-access-rights
+source SCRIPT-1f-pull-repos
+source SCRIPT-1g-put-initial-files-in-repos

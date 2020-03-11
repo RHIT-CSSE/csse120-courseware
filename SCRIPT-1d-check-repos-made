@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# This script is intended to be "sourced" by other scripts.
+#
+#   The script doing the "source" must have set the variable:
+#     username_files
+#   to an array of files from which to obtain usernames
+#
+# This script:
+#   Checks tha the repositories for the usernames specified by the
+#   username_files have been created.
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+if [ "${username_files}" == "" ]; then
+    echo ""
+    echo "The script that SOURCED this script"
+    echo "failed to set the array variable"
+    echo "  username_files"
+    echo "to a non-empty value."
+    echo "EXITING NOW, NOTHING DONE."
+    echo ""
+    exit 1
+fi
+
+# ----------------------------------------------------------------------
+# Get the   usernames   from the usernames_files.
+#   At the same time, get the values of the variables:
+#      repo_prefix        e.g.  csse120-202030-
+#      gitter_ssh         e.g.
+#          mutchler@gitter.csse.rose-hulman.edu
+#      gitter_repos_folder  e.g.  /srv/repos
+#
+# from the relevant files.
+# ----------------------------------------------------------------------
+
+
+if [ "${GET_USERNAMES_HAS_RUN}" != "1" ]; then
+    source SCRIPT-1b-get-usernames
+fi
+
+# ----------------------------------------------------------------------
+# Check that all the repositories exist. If ANY do NOT already exist,
+#   display a warning and EXIT the script without doing anything further.
+# ----------------------------------------------------------------------
+
+echo ""
+echo "Checking that ALL the repos to be pulled/cloned already exist."
+
+for username in ${usernames[@]}; do
+    repo_name="${repo_prefix}${username}.git"
+    echo "   Checking ${repo_name}"
+
+    ssh -e none "${gitter_ssh}" "ls ${gitter_repos_folder} | egrep -q '^'${repo_name}'$'"
+    result="`echo $?`"
+
+    if [ "${result}" == "1" ]; then
+        echo ""
+        echo "ERROR: The repository:"
+        echo "   ${repo_name}"
+        echo "does NOT YET EXIST."
+        echo "I am STOPPING HERE, with NOTHING DONE."
+        echo "Remove the relevant username from:"
+        echo "  ${username_files[@]}"
+        echo "or otherwise fix things and re-run this script."
+        echo ""
+        exit 1
+    elif [ "${result}" != "0" ]; then
+        echo ""
+        echo "ERROR: In checking whether the repository:"
+        echo "   ${repo_name}"
+        echo "already exists, something went wrong."
+        echo "I am STOPPING HERE, with NOTHING DONE."
+        echo "Remove the relevant username from:"
+        echo "  ${username_files[@]}"
+        echo "or otherwise fix things and re-run this script."
+        echo ""
+        exit 1
+    fi
+done
+
+echo "Good! ALL the repos to be pulled/cloned already exist."
+
+CHECK_REPOS_MADE_HAS_RUN=1  # For use in scripts "sourcing" this script.

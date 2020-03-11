@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# ---------------------------------------------------------------------
+# Make the relevant folders for the DATA and cloned REPOS,
+#   if they do not already exist.  Add default files.
+#
+# Author:  David Mutchler.
+# ---------------------------------------------------------------------
+
+# ---------------------------------------------------------------------
+# Get the values of the variables:
+#      data_folder        e.g.    DATA/DATA-csse120-202030
+#      data_subfolders    e.g.  ( DATA   DATA-csse120-202030 )
+#      repos_folder       e.g.    REPOS/REPOS-csse120-202030
+#      repos_subfolders   e.g.  ( REPOS   REPOS-csse120-202030 )
+#      username_data_files   e.g.
+#            (students-01 students instructors assistants others temp)
+#
+# from the relevant file.
+# ---------------------------------------------------------------------
+
+if [ ! "${SET_CONSTANTS_HAS_RUN}" == "1" ]; then
+   source SET_CONSTANTS
+fi
+
+# ---------------------------------------------------------------------
+# Make the folders, if they do not already exist.
+# ---------------------------------------------------------------------
+
+for folder in ${data_subfolders[@]}; do
+    if [ ! -d "${folder}" ]; then
+        mkdir "${folder}"
+    fi
+    cd ${folder}
+done
+
+for folder in ${data_subfolders[@]}; do
+    cd ..
+done
+
+for folder in ${repos_subfolders[@]}; do
+    if [ ! -d "${folder}" ]; then
+        mkdir "${folder}"
+    fi
+    cd ${folder}
+done
+
+for folder in ${repos_subfolders[@]}; do
+    cd ..
+done
+
+# ---------------------------------------------------------------------
+# Put empty default files for usernames in the DATA subfolder.
+# ---------------------------------------------------------------------
+cd ${data_folder}
+
+for file in ${username_data_files[@]}; do
+    if [ ! -f "${file}" ]; then
+        touch $file
+    fi
+done
+
+for folder in ${data_subfolders[@]}; do
+    cd ..
+done
+
+# ---------------------------------------------------------------------
+# Put default LICENSE, README.md, and GITIGNORE files into the DATA
+#   subfolder.  GITIGNORE will later become the repos' .gitignore file.
+# ---------------------------------------------------------------------
+
+files=(DEFAULT-LICENSE  DEFAULT-README.md  DEFAULT-GITIGNORE)
+for file in ${files[@]}; do
+    if [ ! -f "${data_folder}/${file}" ]; then
+        echo "Copying file  ${file}  to folder  ${data_folder}"
+        cp $file ${data_folder}/${file}
+    else
+        echo ""
+        echo "NOT copying file  ${file}  to folder  ${data_folder}"
+        echo "  because a file by that name already exists in that folder."
+        echo ""
+    fi
+done
+
+echo ""
+echo "*** REMINDER:"
+echo "    Change the   DEFAULT-BLAH   files"
+echo "    in folder: ${data_folder}"
+echo "    to be suitable for YOUR course."
+echo ""

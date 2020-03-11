@@ -1,0 +1,125 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# This script is intended to be "sourced" by other scripts.
+#
+#   The script doing the "source" must have set the variable:
+#     username_files
+#   to an array of files from which to obtain usernames
+#
+# This script:
+#   Make new repositories for usernames specified in the username_files.
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+if [ "${username_files}" == "" ]; then
+    echo ""
+    echo "The script that SOURCED this script"
+    echo "failed to set the array variable"
+    echo "  username_files"
+    echo "to a non-empty value."
+    echo "EXITING NOW, NOTHING DONE."
+    echo ""
+    exit 1
+fi
+
+# ----------------------------------------------------------------------
+# Get the   usernames   for which repositories should be made.
+#   At the same time, get the values of the variables:
+#      repo_prefix        e.g.  csse120-202030-
+#      gitter_ssh         e.g.
+#          mutchler@gitter.csse.rose-hulman.edu
+#      gitter_repos_folder  e.g.  /srv/repos
+#
+# from the relevant files.
+# ----------------------------------------------------------------------
+
+if [ "${GET_USERNAMES_HAS_RUN}" != "1" ]; then
+    source SCRIPT-1b-get-usernames
+fi
+
+# ----------------------------------------------------------------------
+# Go through all the proposed repos to make.
+# If ANY already exist, display a warning and EXIT the script
+# without doing anything further.
+# ----------------------------------------------------------------------
+
+echo ""
+echo "Checking whether any of the proposed repos already exists."
+
+for username in ${usernames[@]}; do
+    repo_name="${repo_prefix}${username}.git"
+    echo "   Checking ${repo_name}"
+
+    ssh -e none "${gitter_ssh}" "ls ${gitter_repos_folder} | egrep -q '^'${repo_name}'$'"
+    result="`echo $?`"
+
+    if [ "${result}" == "0" ]; then
+        echo ""
+        echo "ERROR: The repository:"
+        echo "   ${repo_name}"
+        echo "already exists. I am STOPPING HERE, with NOTHING DONE."
+        echo "Remove the relevant username from:"
+        echo "   ${username_files[@]}"
+        echo "or otherwise fix things and re-run this script."
+        echo ""
+        exit 1
+
+    elif [ "${result}" != "1" ]; then
+        echo ""
+        echo "ERROR: In checking whether the repository:"
+        echo "   ${repo_name}"
+        echo "already exists, something went wrong."
+        echo "I am STOPPING HERE, with NOTHING DONE."
+        echo "Remove the relevant username from:"
+        echo "  ${username_files[@]}"
+        echo "or otherwise fix things and re-run this script."
+        echo ""
+        exit 1
+    fi
+done
+
+echo "Good! None of the proposed repos already exist."
+
+# ----------------------------------------------------------------------
+# Go through all the proposed repos to make, making each.
+# If ANY failure occurs, EXIT without doing anything further.
+# ----------------------------------------------------------------------
+
+echo ""
+echo "Making the proposed repos."
+
+for username in ${usernames[@]}; do
+    repo_name="${repo_prefix}${username}.git"
+    echo "   Making ${repo_name}"
+
+    repo_folder="${gitter_repos_folder}/${repo_name}"
+
+    # Make the folder for the repo:
+
+    ssh -e none "${gitter_ssh}" "mkdir ${repo_folder}"
+    result="`echo $?`"
+    if [ "${result}" != "0" ]; then
+        echo "got here"
+        echo ""
+        echo "Something went wrong in making the folder:"
+        echo "   ${repo_name}"
+        echo "STOPPING HERE!"
+        exit 1
+    fi
+
+    # Initialize a bare GIT in the repo folder:
+
+    ssh -e none "${gitter_ssh}" "git init --bare ${repo_folder}"
+    result="`echo $?`"
+    if [ "${result}" != "0" ]; then
+        echo ""
+        echo "Something went wrong in doing:"
+        echo "   git init --bare ${repo_folder}"
+        echo "STOPPING HERE!"
+        exit 1
+    fi
+done
+
+MAKE_NEW_REPOS_HAS_RUN=1  # For use in scripts "sourcing" this script.

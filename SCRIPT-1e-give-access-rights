@@ -1,0 +1,150 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# This script is intended to be "sourced" by other scripts.
+#
+#   The script doing the "source" must have set the variable:
+#     username_files
+#   to an array of files from which to obtain usernames
+#
+# This script:
+#   For each of the repositories,
+#   give full access rights to:
+#     -- the username that is at the tail of the repository
+#     -- every username in the   DEFAULT-RIGHTS   file
+#         in the DATA subfolder.
+#
+# Exceptions: [PUT A COMMENT HERE HOW USING
+#    -x user:foo
+# instead of
+#    -m user:foo:rwx
+# removes rights.  Also note special repos like  solution   are not
+# associated with a username.]
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+if [ "${username_files}" == "" ]; then
+    echo ""
+    echo "The script that SOURCED this script"
+    echo "failed to set the array variable"
+    echo "  username_files"
+    echo "to a non-empty value."
+    echo "EXITING NOW, NOTHING DONE."
+    echo ""
+    exit 1
+fi
+
+# ----------------------------------------------------------------------
+# Check that repositories for ALL of the usernames in the specified
+# file(s) exist.  Exit with a warning if not.
+#   At the same time, get the values of the variables:
+#      data_folder        e.g.    DATA/DATA-csse120-202030
+#      repos_folder       e.g.    REPOS/REPOS-csse120-202030
+#      repos_subfolders   e.g.  ( REPOS   REPOS-csse120-202030 )
+#      repo_prefix        e.g.  csse120-202030-
+#      gitter_ssh         e.g.
+#          mutchler@gitter.csse.rose-hulman.edu
+#      gitter_repos_folder  e.g.  /srv/repos
+#
+# from the relevant files.
+# ----------------------------------------------------------------------
+
+if [ "${CHECK_REPOS_MADE_HAS_RUN}" != "1" ]; then
+    source SCRIPT-1d-check-repos-made
+fi
+
+# ----------------------------------------------------------------------
+# For each repo corresponding to a username in the usernames for this
+#   run, give full rights to every username in the DEFAULT-RIGHTS
+#   file in the DATA subfolder, as well as to the 'owner' of
+#   the repository (i.e., the username at the tail of the repo-name).
+#
+# First check that the DEFAULT-RIGHTS file exists and is non-empty,
+#   and WARN IF NOT.
+# ----------------------------------------------------------------------
+
+if [ ! -f ${data_folder}/DEFAULT-RIGHTS ]; then
+    echo ""
+    echo "ERROR: There is no file named  DEFAULT-RIGHTS   in:"
+    echo "    ${data_folder}"
+    echo "Presumably this is NOT what you want."
+    echo "Fix and re-run (or skip) this script."
+    echo ""
+    exit 1
+fi
+
+full_rights_to=$(< ${data_folder}/DEFAULT-RIGHTS )
+
+if [ "${#full_rights_to[@]}" == "0" ]; then
+    echo ""
+    echo "ERROR: There DEFAULT-RIGHTS  file in:"
+    echo "    ${data_folder}"
+    echo "has NO usernames in it."
+    echo "Presumably this is NOT what you want."
+    echo "Fix and re-run (or skip) this script."
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "For each of the following users:"
+echo "  ${usernames[@]}"
+echo "I will give FULL RIGHTS to the following users:"
+echo "    The repository 'owner' (tail of the repository name)"
+for user in ${full_rights_to[@]}; do
+    echo "    ${user}"   
+done
+echo ""
+
+cd ${repos_folder}
+
+for username in ${usernames[@]}; do
+    repo_name="${gitter_repos_folder}/${repo_prefix}${username}.git"
+
+    echo ""
+    echo "Giving full rights to the repository for  ${username}  to:"
+
+    echo "  ${username}"
+    ssh -e none "${gitter_ssh}" "setfacl -R -m user:${username}:rwx ${repo_name}"
+    result1="`echo $?`"
+    ssh -e none "${gitter_ssh}" "setfacl -R -d -m user:${username}:rwx ${repo_name}"
+    result2="`echo $?`"
+
+    if [ "${result1}" != "0" ] || [ "${result2}" != "0" ]; then
+        echo ""
+        echo "Something went wrong in setting access rights for:"
+        echo "   ${username}"
+        echo "to the folder:"
+        echo "   ${repo_name}"
+        echo "STOPPING HERE!"
+        exit 1
+    fi
+
+    for user in ${full_rights_to[@]}; do
+        echo "  ${user}"
+
+        ssh -e none "${gitter_ssh}" "setfacl -R -m user:${user}:rwx ${repo_name}"
+        result1="`echo $?`"
+        ssh -e none "${gitter_ssh}" "setfacl -R -d -m user:${user}:rwx ${repo_name}"
+        result2="`echo $?`"
+
+        if [ "${result1}" != "0" ] ||  [ "${result2}" != "0" ]; then
+            echo ""
+            echo "Something went wrong in setting access rights for:"
+            echo "   ${user}"
+            echo "to the folder:"
+            echo "   ${repo_name}"
+            echo "STOPPING HERE!"
+            exit 1
+        fi
+    done
+done
+    
+# ---------------------------------------------------------------------
+# Undo the CD done previously in this script.
+# ---------------------------------------------------------------------
+
+for folder in ${repos_subfolders[@]}; do
+    cd ..
+done

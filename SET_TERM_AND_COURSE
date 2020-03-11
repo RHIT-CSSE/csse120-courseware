@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------
+# This script is intended to be "sourced" by other scripts.
+#
+# This script:
+#   Sets the variables:
+#      term                    e.g. 202030
+#      course                  e.g. csse120
+#      my_username_on_gitter   e.g. mutchler
+#      gitter_repos_folder     /srv/repos
+#
+#   and based on the above:
+#      gitter_ssh              e.g. mutchler@gitter.csse.rose-hulman.edu
+#      repo_prefix             e.g. csse120-202030-
+#
+#   to be used by the scripts for repository management.
+#
+# *** IMPORTANT: You MUST set the  TERM  and  COURSE   below
+#                at the beginning of each term.
+#
+# Author:  David Mutchler.
+# ----------------------------------------------------------------------
+
+term=202030
+course=csse230
+my_username_on_gitter=mutchler
+
+gitter_ssh="${my_username_on_gitter}@gitter.csse.rose-hulman.edu"
+gitter_repos_folder="/srv/repos"
+repo_prefix=${course}-${term}-
